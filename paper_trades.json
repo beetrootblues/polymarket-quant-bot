@@ -1,8 +1,8 @@
 {
   "created_at": "2026-03-10T04:12:51.502234+00:00",
-  "updated_at": "2026-03-10T14:29:18.271130+00:00",
+  "updated_at": "2026-03-10T15:24:03.931002+00:00",
   "strategy_version": "v3",
-  "total_cycles": 13,
+  "total_cycles": 14,
   "paper_capital": 10000,
   "paper_deployed": 1000.0,
   "cumulative_pnl": 3530.92,
@@ -20,11 +20,13 @@
   "worst_trade_pnl": 174.93,
   "max_drawdown_pct": 0.03,
   "peak_capital": 13535.41,
-  "sharpe_estimate": 82.977,
-  "whale_signals_received": 0,
-  "obi_signals_received": 104,
+  "sharpe_estimate": 78.719,
+  "whale_signals_received": 26,
+  "obi_signals_received": 164,
   "regime_types_seen": {
-    "normal": 12
+    "normal": 48,
+    "trending": 18,
+    "mean_reverting": 6
   },
   "whale_obi_aligned_count": 0,
   "trades": [
@@ -44,7 +46,7 @@
       "exit_price": null,
       "pnl": 6.45,
       "pnl_pct": 1.29,
-      "hold_hours": 10.27,
+      "hold_hours": 11.19,
       "exit_reason": null,
       "regime_type": "normal",
       "obi_imbalance": 0.0,
@@ -184,7 +186,7 @@
       "exit_price": null,
       "pnl": -1.55,
       "pnl_pct": -0.31,
-      "hold_hours": 10.27,
+      "hold_hours": 11.19,
       "exit_reason": null,
       "regime_type": "normal",
       "obi_imbalance": 0.0,
@@ -419,6 +421,36 @@
       "cumulative_pnl": 3530.92,
       "win_rate": 1.0,
       "max_drawdown": 0.03
+    },
+    {
+      "cycle": 14,
+      "timestamp": "2026-03-10T15:24:03.931002+00:00",
+      "markets_scanned": 60,
+      "signals_generated": 60,
+      "signals_passing_gates": 0,
+      "new_trades": 0,
+      "trades_closed": 0,
+      "open_positions": 2,
+      "paper_equity": 13530.92,
+      "cumulative_pnl": 3530.92,
+      "win_rate": 1.0,
+      "max_drawdown": 0.0003,
+      "gate_results": {
+        "volume_pass": 60,
+        "spread_pass": 0,
+        "whale_obi_pass": 43,
+        "edge_pass": 54,
+        "layer_agreement_pass": 4,
+        "price_range_pass": 11,
+        "drawdown_pass": 60,
+        "all_pass": 0
+      },
+      "primary_blocker": "spread (0/60 pass - all CLOB spreads > 0.06)",
+      "regime_distribution": {
+        "normal": 36,
+        "trending": 18,
+        "mean_reverting": 6
+      }
     }
   ]
 }
