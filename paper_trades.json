@@ -1,13 +1,13 @@
 {
   "created_at": "2026-03-10T04:12:51.502234+00:00",
-  "updated_at": "2026-03-10T16:24:31.384087+00:00",
+  "updated_at": "2026-03-10T17:07:48.242210+00:00",
   "strategy_version": "v3",
-  "total_cycles": 15,
+  "total_cycles": 16,
   "paper_capital": 10000,
   "paper_deployed": 5412.37,
-  "cumulative_pnl": 3530.92,
+  "cumulative_pnl": 3534.19,
   "realised_pnl": 3526.02,
-  "unrealised_pnl": 4.9,
+  "unrealised_pnl": 8.17,
   "total_trades": 24,
   "open_trades": 14,
   "closed_trades": 10,
@@ -20,13 +20,13 @@
   "worst_trade_pnl": 174.93,
   "max_drawdown_pct": 0.03,
   "peak_capital": 13535.41,
-  "sharpe_estimate": 78.719,
+  "sharpe_estimate": 5.227,
   "whale_signals_received": 26,
-  "obi_signals_received": 214,
+  "obi_signals_received": 244,
   "regime_types_seen": {
-    "normal": 48,
+    "normal": 50,
     "trending": 68,
-    "mean_reverting": 6
+    "mean_reverting": 37
   },
   "whale_obi_aligned_count": 0,
   "trades": [
@@ -409,9 +409,9 @@
       "kelly_fraction": 0.1069,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.5287,
@@ -422,7 +422,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.655
     },
     {
       "trade_id": "39d49b3e674c",
@@ -438,9 +439,9 @@
       "kelly_fraction": 0.1428,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.4832,
@@ -451,7 +452,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.753
     },
     {
       "trade_id": "99bf9c5c677c",
@@ -496,9 +498,9 @@
       "kelly_fraction": 0.215,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.4274,
@@ -509,7 +511,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.845
     },
     {
       "trade_id": "0ae8073f92a1",
@@ -525,9 +528,9 @@
       "kelly_fraction": 0.1561,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.51,
+      "pnl_pct": 0.13,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.4209,
@@ -538,7 +541,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.789
     },
     {
       "trade_id": "aa334436e8f4",
@@ -554,9 +558,9 @@
       "kelly_fraction": 0.1251,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 3.22,
+      "pnl_pct": 0.8,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.3815,
@@ -567,7 +571,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.7525
     },
     {
       "trade_id": "1114d820ac7a",
@@ -583,9 +588,9 @@
       "kelly_fraction": 0.0863,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.326,
@@ -596,7 +601,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.655
     },
     {
       "trade_id": "d5407308aff1",
@@ -612,9 +618,9 @@
       "kelly_fraction": 0.2306,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": -0.46,
+      "pnl_pct": -0.11,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.3976,
@@ -625,7 +631,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.87
     },
     {
       "trade_id": "5d45ee2877ce",
@@ -641,9 +648,9 @@
       "kelly_fraction": 0.1644,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.2005,
@@ -654,7 +661,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.8455
     },
     {
       "trade_id": "5136e4d2ff85",
@@ -670,9 +678,9 @@
       "kelly_fraction": 0.1904,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": -0.1954,
@@ -683,7 +691,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
+      ],
+      "current_price": 0.8675
     },
     {
       "trade_id": "e17bb17b81e5",
@@ -699,9 +708,9 @@
       "kelly_fraction": 0.0683,
       "status": "open",
       "exit_price": null,
-      "pnl": 0,
-      "pnl_pct": 0,
-      "hold_hours": 0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0,
+      "hold_hours": 0.72,
       "exit_reason": null,
       "regime_type": "trending",
       "obi_imbalance": 0.1868,
@@ -712,123 +721,8 @@
       "layers_used": [
         "regime",
         "obi"
-      ]
-    }
-  ],
-  "cycle_history": [
-    {
-      "cycle": 1,
-      "timestamp": "2026-03-10T04:12:51.502256+00:00",
-      "markets_scanned": 50,
-      "signals_generated": 18,
-      "new_trades": 12,
-      "trades_closed": 0,
-      "open_positions": 12,
-      "paper_equity": 10000.0,
-      "cumulative_pnl": 0.0,
-      "win_rate": 0.0,
-      "max_drawdown": 0.0
-    },
-    {
-      "cycle": 4,
-      "timestamp": "2026-03-10T06:21:32.765479+00:00",
-      "markets_scanned": 50,
-      "signals_generated": 0,
-      "new_trades": 0,
-      "trades_closed": 10,
-      "open_positions": 2,
-      "paper_equity": 13535.41,
-      "cumulative_pnl": 3535.41,
-      "win_rate": 1.0,
-      "max_drawdown": 0.0
-    },
-    {
-      "cycle": 12,
-      "timestamp": "2026-03-10T14:20:09.306844+00:00",
-      "markets_scanned": 50,
-      "signals_generated": 50,
-      "signals_passing_gates": 0,
-      "new_trades": 0,
-      "trades_closed": 0,
-      "open_positions": 2,
-      "paper_equity": 13530.92,
-      "cumulative_pnl": 3530.92,
-      "win_rate": 1.0,
-      "max_drawdown": 0.03
-    },
-    {
-      "cycle": 13,
-      "timestamp": "2026-03-10T14:29:18.271291+00:00",
-      "markets_scanned": 50,
-      "signals_generated": 50,
-      "signals_passing_gates": 0,
-      "new_trades": 0,
-      "trades_closed": 0,
-      "open_positions": 2,
-      "paper_equity": 13530.92,
-      "cumulative_pnl": 3530.92,
-      "win_rate": 1.0,
-      "max_drawdown": 0.03
-    },
-    {
-      "cycle": 14,
-      "timestamp": "2026-03-10T15:24:03.931002+00:00",
-      "markets_scanned": 60,
-      "signals_generated": 60,
-      "signals_passing_gates": 0,
-      "new_trades": 0,
-      "trades_closed": 0,
-      "open_positions": 2,
-      "paper_equity": 13530.92,
-      "cumulative_pnl": 3530.92,
-      "win_rate": 1.0,
-      "max_drawdown": 0.0003,
-      "gate_results": {
-        "volume_pass": 60,
-        "spread_pass": 0,
-        "whale_obi_pass": 43,
-        "edge_pass": 54,
-        "layer_agreement_pass": 4,
-        "price_range_pass": 11,
-        "drawdown_pass": 60,
-        "all_pass": 0
-      },
-      "primary_blocker": "spread (0/60 pass - all CLOB spreads > 0.06)",
-      "regime_distribution": {
-        "normal": 36,
-        "trending": 18,
-        "mean_reverting": 6
-      }
-    },
-    {
-      "cycle": 15,
-      "timestamp": "2026-03-10T16:24:31.384087+00:00",
-      "markets_scanned": 50,
-      "signals_generated": 50,
-      "signals_passing_gates": 16,
-      "new_trades": 12,
-      "trades_closed": 0,
-      "open_positions": 14,
-      "paper_equity": 13530.92,
-      "cumulative_pnl": 3530.92,
-      "win_rate": 1.0,
-      "max_drawdown": 0.0332,
-      "gate_results": {
-        "volume_pass": 50,
-        "spread_pass": 50,
-        "whale_obi_pass": 50,
-        "edge_pass": 32,
-        "layer_agreement_pass": 19,
-        "price_range_pass": 50,
-        "drawdown_pass": 50,
-        "all_pass": 16
-      },
-      "primary_blocker": "layer_agreement_pass: 19/50",
-      "regime_distribution": {
-        "normal": 0,
-        "trending": 50,
-        "mean_reverting": 0
-      }
+      ],
+      "current_price": 0.635
     }
   ]
 }
