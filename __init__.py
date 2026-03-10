@@ -1,0 +1,1 @@
+"""Polymarket Quant Bot — A quantitative trading system for prediction markets."""
