@@ -1,9 +1,16 @@
 """
-Polymarket Quant Bot - Paper Trader
-====================================
-Wraps the full 5-layer pipeline with paper trade logging.
+Polymarket Quant Bot - Paper Trader v2
+========================================
+Wraps the v2 whale-intelligence pipeline with paper trade logging.
 No real money - tracks hypothetical entries, exits, P&L, and win rate.
 Persists a rolling trade journal as JSON for GitHub commit.
+
+v2 changes:
+  - Uses SignalGenerator v2 with whale intelligence as primary alpha
+  - Removed Monte Carlo + Variance Reduction layers
+  - Whale confidence, direction, cluster data logged per trade
+  - Telegram summary includes whale intelligence stats
+  - Stricter pre-trade filters (5% edge, $500K volume, whale confirmation)
 
 Usage:
     python paper_trader.py              # Run one cycle
@@ -20,9 +27,8 @@ from typing import List, Dict, Optional, Any
 
 from config import BotConfig
 from data_layer import GammaAPIClient
-from signal_engine import SignalGenerator
-from monte_carlo import rare_event_importance_sampling
-from variance_reduction import stacked_variance_reduction
+from signal_engine import SignalGenerator, make_v2_config
+from whale_intelligence import WhaleTracker, WhaleConfig, WhaleIntelligence
 from copula_engine import compute_tail_dependence
 from agent_based_model import PredictionMarketABM
 
@@ -56,6 +62,15 @@ class PaperTrade:
     hold_hours: float = 0.0
     exit_reason: Optional[str] = None
     layers_used: List[str] = field(default_factory=list)
+    # v2 whale intelligence fields
+    whale_confidence_score: float = 0.0
+    whale_direction: str = ""
+    whale_strength: str = ""
+    cluster_detected: bool = False
+    cluster_direction: str = ""
+    cluster_wallets: int = 0
+    insider_aligned: bool = False
+    n_layers_agreeing: int = 0
 
 
 @dataclass
@@ -63,6 +78,7 @@ class JournalSnapshot:
     """Cumulative paper trading journal."""
     created_at: str = ""
     updated_at: str = ""
+    strategy_version: str = "v2"
     total_cycles: int = 0
     paper_capital: float = 10_000.0
     paper_deployed: float = 0.0
@@ -82,6 +98,11 @@ class JournalSnapshot:
     max_drawdown_pct: float = 0.0
     peak_capital: float = 10_000.0
     sharpe_estimate: float = 0.0
+    # v2 whale intelligence aggregate stats
+    whale_signals_received: int = 0
+    whale_clusters_detected: int = 0
+    whale_aligned_trades: int = 0
+    avg_whale_confidence: float = 0.0
     trades: List[Dict] = field(default_factory=list)
     cycle_history: List[Dict] = field(default_factory=list)
 
@@ -91,17 +112,19 @@ class JournalSnapshot:
 # ---------------------------------------------------------------------------
 
 class PaperTrader:
-    """Runs the quant pipeline and logs paper trades."""
+    """Runs the v2 quant pipeline and logs paper trades."""
 
     JOURNAL_FILE = "paper_journal.json"
     MAX_OPEN_TRADES = 20
     TRADE_EXPIRY_HOURS = 72  # Auto-close after 72h
 
     def __init__(self, config: BotConfig = None, journal_path: str = None):
-        self.config = config or BotConfig(initial_capital=10_000)
+        self.config = config or make_v2_config()
         self.journal_path = journal_path or self.JOURNAL_FILE
         self.journal = self._load_journal()
         self.now = datetime.now(timezone.utc)
+        # v2: create whale tracker instance (shared across cycle)
+        self.whale_tracker = WhaleTracker(WhaleConfig())
 
     # --- Journal persistence ---
 
@@ -260,18 +283,27 @@ class PaperTrader:
                 std = np.std(pnls, ddof=1)
                 j.sharpe_estimate = round(avg / std if std > 0 else 0.0, 3)
 
+        # v2: Whale intelligence aggregate stats
+        all_trades = j.trades
+        whale_scores = [t.get('whale_confidence_score', 0) for t in all_trades if t.get('whale_confidence_score', 0) > 0]
+        j.whale_signals_received = len(whale_scores)
+        j.whale_clusters_detected = sum(1 for t in all_trades if t.get('cluster_detected', False))
+        j.whale_aligned_trades = sum(1 for t in all_trades if t.get('insider_aligned', False))
+        j.avg_whale_confidence = round(np.mean(whale_scores), 4) if whale_scores else 0.0
+
     # --- Main pipeline ---
 
     def run_cycle(self, max_markets: int = 50) -> Dict[str, Any]:
-        """Execute one full paper trading cycle."""
+        """Execute one full paper trading cycle with v2 whale intelligence."""
         self.now = datetime.now(timezone.utc)
         cycle_start = self.now.isoformat()
 
         print('======================================================================')
-        print('  POLYMARKET PAPER TRADER - CYCLE START')
+        print('  POLYMARKET PAPER TRADER v2 - CYCLE START')
         print(f'  Timestamp: {cycle_start}')
         print(f'  Cycle #{self.journal.total_cycles + 1}')
         print(f'  Paper Capital: ${self.journal.paper_capital + self.journal.cumulative_pnl:,.2f}')
+        print(f'  Strategy: Whale Intelligence + Strict Filters')
         print('======================================================================')
 
         # ----- LAYER 1: Data Ingestion -----
@@ -299,32 +331,55 @@ class PaperTrader:
         print('\n[POSITIONS] Managing open trades...')
         n_open_before = self.journal.open_trades
 
-        # Check exits on existing positions
-        signal_gen = SignalGenerator(self.config)
+        # v2: Create SignalGenerator with shared whale tracker
+        signal_gen = SignalGenerator(self.config, whale_tracker=self.whale_tracker)
         self._check_exit_signals(signal_gen, current_prices)
         self._close_expired_trades(current_prices)
 
         n_closed_this_cycle = n_open_before - len([t for t in self.journal.trades if t['status'] == 'open'])
         print(f'  Closed this cycle: {n_closed_this_cycle}')
 
-        # ----- LAYER 2: Signal Generation -----
-        print(f'\n[LAYER 2] Signal Engine - Processing {len(target_markets)} markets...')
+        # ----- LAYER 2: Whale Intelligence -----
+        print(f'\n[LAYER 2] Whale Intelligence - Scanning {len(target_markets)} markets...')
+
+        whale_intels: Dict[str, WhaleIntelligence] = {}
+        whale_scan_stats = {'total': 0, 'strong': 0, 'moderate': 0, 'weak': 0, 'none': 0, 'clusters': 0, 'errors': 0}
 
         for market in target_markets:
-            signal_gen.prob_engine.update(market)
+            try:
+                intel = self.whale_tracker.analyze_market(market)
+                whale_intels[market.market_id] = intel
+                whale_scan_stats['total'] += 1
+                strength = intel.signal_strength or 'none'
+                whale_scan_stats[strength] = whale_scan_stats.get(strength, 0) + 1
+                if intel.cluster_detected:
+                    whale_scan_stats['clusters'] += 1
+            except Exception as e:
+                whale_scan_stats['errors'] += 1
+                logger.warning(f"Whale scan failed for {market.market_id}: {e}")
 
-        # Particle filter warmup
-        for _ in range(3):
-            for market in target_markets:
-                noise = np.random.normal(0, 0.001)
-                perturbed = np.clip(market.yes_price + noise, 0.01, 0.99)
-                signal_gen.prob_engine.filters.update_market(market.market_id, perturbed)
+        print(f'  Scanned: {whale_scan_stats["total"]} markets')
+        print(f'  Signals: {whale_scan_stats["strong"]} strong, {whale_scan_stats["moderate"]} moderate, {whale_scan_stats["weak"]} weak')
+        print(f'  Clusters: {whale_scan_stats["clusters"]} | Errors: {whale_scan_stats["errors"]}')
 
-        signals = signal_gen.process_market_batch(target_markets)
-        print(f'  Signals: {len(signal_gen.signals_generated)} total, {len(signals)} actionable')
+        # ----- LAYER 3: Signal Generation (v2 ensemble) -----
+        print(f'\n[LAYER 3] Signal Engine v2 - Processing {len(target_markets)} markets...')
 
-        # ----- LAYER 3: Paper Trade Entry -----
-        print('\n[LAYER 3] Paper Trade Entry...')
+        # Update probability engine with whale intelligence
+        for market in target_markets:
+            whale_intel = whale_intels.get(market.market_id)
+            signal_gen.prob_engine.update(market, whale_intel=whale_intel)
+
+        # Generate signals with whale data passed through
+        signals = signal_gen.process_market_batch(
+            target_markets,
+            whale_intels=whale_intels,
+        )
+        print(f'  Signals: {len(signal_gen._all_signals)} total, {len(signals)} actionable (passed all gates)')
+        print(f'  Rejected: {len(signal_gen._rejected_signals)}')
+
+        # ----- LAYER 4: Paper Trade Entry -----
+        print('\n[LAYER 4] Paper Trade Entry...')
         new_trades = []
         current_open = len([t for t in self.journal.trades if t['status'] == 'open'])
         slots_available = self.MAX_OPEN_TRADES - current_open
@@ -372,22 +427,35 @@ class PaperTrader:
                 confidence=sig.confidence,
                 size_usd=round(result['size'], 2),
                 kelly_fraction=round(sig.suggested_size / equity if equity > 0 else 0, 4),
-                layers_used=list(getattr(sig, 'contributing_models', ['ensemble']))
+                layers_used=list(sig.components.keys()) if sig.components else ['ensemble'],
+                # v2 whale intelligence fields
+                whale_confidence_score=round(sig.whale_confidence, 4),
+                whale_direction=sig.whale_direction,
+                whale_strength=sig.whale_strength,
+                cluster_detected=sig.whale_cluster,
+                cluster_direction=whale_intels.get(sig.market_id, WhaleIntelligence(
+                    market_id=sig.market_id, condition_id="", timestamp=""
+                )).cluster_direction,
+                cluster_wallets=whale_intels.get(sig.market_id, WhaleIntelligence(
+                    market_id=sig.market_id, condition_id="", timestamp=""
+                )).cluster_wallets,
+                insider_aligned=sig.insider_aligned,
+                n_layers_agreeing=sig.n_layers_agreeing,
             )
 
             self.journal.trades.append(asdict(trade))
             new_trades.append(trade)
-            logger.info(f"PAPER TRADE: {trade.direction} ${trade.size_usd:.0f} @ {trade.entry_price:.3f} "
-                        f"| edge={trade.edge:+.4f} | {trade.question[:50]}")
+            logger.info(
+                f"PAPER TRADE: {trade.direction} ${trade.size_usd:.0f} @ {trade.entry_price:.3f} "
+                f"| edge={trade.edge:+.4f} | whale={trade.whale_direction}({trade.whale_confidence_score:.2f}) "
+                f"| cluster={'YES' if trade.cluster_detected else 'NO'} "
+                f"| {trade.question[:50]}"
+            )
 
         print(f'  New paper trades: {len(new_trades)}')
 
-        # ----- LAYER 4: Model Demos (lightweight) -----
-        print('\n[LAYER 4] Model Health Checks...')
-
-        # Quick importance sampling check
-        is_r = rare_event_importance_sampling(S0=5000, K_crash=0.2, sigma=0.4, T=1/8.4)
-        print(f'  IS tail risk: P(crash)={is_r["p_IS"]:.6f}, VR={is_r["variance_reduction_factor"]:.0f}x')
+        # ----- LAYER 5: Model Health Checks (lightweight) -----
+        print('\n[LAYER 5] Model Health Checks...')
 
         # Quick ABM convergence check
         abm = PredictionMarketABM(true_prob=0.65, n_informed=10, n_noise=50, n_mm=5)
@@ -395,17 +463,22 @@ class PaperTrader:
         abm_r = abm.get_results()
         print(f'  ABM convergence: true=0.65, final={abm_r["final_price"]:.4f}, err={abm_r["convergence_error"]:.4f}')
 
-        # ----- LAYER 5: Update Journal -----
-        print('\n[LAYER 5] Journal Update...')
+        # Whale tracker health
+        print(f'  Whale tracker: {whale_scan_stats["total"]} scans, {whale_scan_stats["errors"]} errors')
+
+        # ----- LAYER 6: Update Journal -----
+        print('\n[LAYER 6] Journal Update...')
         self.journal.total_cycles += 1
         self._update_journal_stats()
 
         cycle_summary = {
             'cycle': self.journal.total_cycles,
             'timestamp': cycle_start,
+            'strategy_version': 'v2',
             'markets_scanned': len(target_markets),
-            'signals_generated': len(signal_gen.signals_generated),
+            'signals_generated': len(signal_gen._all_signals),
             'signals_actionable': len(signals),
+            'signals_rejected': len(signal_gen._rejected_signals),
             'new_trades': len(new_trades),
             'trades_closed': n_closed_this_cycle,
             'open_positions': self.journal.open_trades,
@@ -415,6 +488,8 @@ class PaperTrader:
             'unrealised_pnl': self.journal.unrealised_pnl,
             'win_rate': self.journal.win_rate,
             'max_drawdown': self.journal.max_drawdown_pct,
+            # v2 whale stats for this cycle
+            'whale_scan': whale_scan_stats,
         }
 
         # Keep last 168 cycles (7 days of hourly runs)
@@ -426,10 +501,11 @@ class PaperTrader:
 
         # ----- Print Summary -----
         print('\n======================================================================')
-        print('  CYCLE COMPLETE')
+        print('  CYCLE COMPLETE (v2 Whale Intelligence)')
         print('======================================================================')
         print(f'  Cycle #{self.journal.total_cycles} | {self.now.strftime("%Y-%m-%d %H:%M UTC")}')
-        print(f'  Markets scanned: {len(target_markets)} | Signals: {len(signals)}')
+        print(f'  Markets scanned: {len(target_markets)} | Signals: {len(signals)} actionable')
+        print(f'  Whale signals: {whale_scan_stats["strong"]}S/{whale_scan_stats["moderate"]}M/{whale_scan_stats["weak"]}W | Clusters: {whale_scan_stats["clusters"]}')
         print(f'  New trades: {len(new_trades)} | Closed: {n_closed_this_cycle}')
         print(f'  Open positions: {self.journal.open_trades} / {self.MAX_OPEN_TRADES}')
         print(f'  Deployed: ${self.journal.paper_deployed:,.2f}')
@@ -439,6 +515,7 @@ class PaperTrader:
         print(f'  Max DD: {self.journal.max_drawdown_pct:.1%}')
         if self.journal.sharpe_estimate != 0:
             print(f'  Sharpe (per-trade): {self.journal.sharpe_estimate:.3f}')
+        print(f'  Avg whale confidence: {self.journal.avg_whale_confidence:.3f}')
         print('======================================================================')
 
         client.close()
@@ -447,15 +524,16 @@ class PaperTrader:
     # --- Telegram summary ---
 
     def format_telegram_summary(self, cycle: Dict[str, Any]) -> str:
-        """Compact Telegram message for hourly updates."""
+        """Compact Telegram message for hourly updates with whale intelligence."""
         j = self.journal
         equity = j.paper_capital + j.cumulative_pnl
+        whale_scan = cycle.get('whale_scan', {})
 
         lines = [
-            f"POLYMARKET PAPER TRADER | Cycle #{cycle['cycle']}",
+            f"POLYMARKET PAPER TRADER v2 | Cycle #{cycle['cycle']}",
             f"{self.now.strftime('%Y-%m-%d %H:%M UTC')}",
             "",
-            f"Markets: {cycle['markets_scanned']} | Signals: {cycle['signals_actionable']}",
+            f"Markets: {cycle['markets_scanned']} | Signals: {cycle['signals_actionable']} actionable / {cycle['signals_generated']} total",
             f"New: {cycle['new_trades']} | Closed: {cycle['trades_closed']} | Open: {cycle['open_positions']}/{self.MAX_OPEN_TRADES}",
             "",
             f"Equity: ${equity:,.2f}",
@@ -466,7 +544,13 @@ class PaperTrader:
         if j.sharpe_estimate != 0:
             lines.append(f"Sharpe: {j.sharpe_estimate:.3f}")
 
-        # Top new trades
+        # v2: Whale intelligence summary
+        lines.append("")
+        lines.append("Whale Intel:")
+        lines.append(f"  Scanned: {whale_scan.get('total', 0)} | Strong: {whale_scan.get('strong', 0)} | Mod: {whale_scan.get('moderate', 0)} | Weak: {whale_scan.get('weak', 0)}")
+        lines.append(f"  Clusters: {whale_scan.get('clusters', 0)} | Aligned trades: {j.whale_aligned_trades} | Avg conf: {j.avg_whale_confidence:.3f}")
+
+        # Top new trades (with whale data)
         recent_open = [t for t in j.trades if t['status'] == 'open']
         recent_open.sort(key=lambda t: abs(t.get('edge', 0)), reverse=True)
 
@@ -474,8 +558,13 @@ class PaperTrader:
             lines.append("")
             lines.append("Top positions:")
             for t in recent_open[:5]:
-                q = t['question'][:45] + ('...' if len(t['question']) > 45 else '')
-                lines.append(f"  {t['direction'][:3]} ${t['size_usd']:.0f} @ {t['entry_price']:.3f} | {q}")
+                q = t['question'][:40] + ('...' if len(t['question']) > 40 else '')
+                whale_tag = f"W:{t.get('whale_direction', '?')[:1]}" if t.get('whale_direction') else ""
+                cluster_tag = " [CL]" if t.get('cluster_detected') else ""
+                lines.append(
+                    f"  {t['direction'][:3]} ${t['size_usd']:.0f} @ {t['entry_price']:.3f} "
+                    f"| e={t['edge']:+.3f} {whale_tag}{cluster_tag} | {q}"
+                )
 
         # Recent closes
         recent_closed = [t for t in j.trades if t['status'] == 'closed']
@@ -489,7 +578,7 @@ class PaperTrader:
                 lines.append(f"  ${t['pnl']:+.2f} ({t['exit_reason']}) | {q}")
 
         lines.append("")
-        lines.append("[PAPER MODE - No real funds at risk]")
+        lines.append("[PAPER MODE v2 - Whale Intel Active - No real funds]")
         return "\n".join(lines)
 
     def get_journal_json(self) -> str:
@@ -502,7 +591,7 @@ class PaperTrader:
 # ---------------------------------------------------------------------------
 
 def main():
-    config = BotConfig(initial_capital=10_000)
+    config = make_v2_config()
     trader = PaperTrader(config)
 
     if '--journal' in sys.argv:
