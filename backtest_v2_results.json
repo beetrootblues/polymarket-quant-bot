@@ -1,0 +1,36 @@
+{
+  "v1": {
+    "trades": 49,
+    "wins": 9,
+    "losses": 40,
+    "win_rate": 0.184,
+    "total_pnl": -13183,
+    "sharpe": -0.565,
+    "brier": 0.4905
+  },
+  "v2": {
+    "trades": 14,
+    "wins": 14,
+    "losses": 0,
+    "win_rate": 1.0,
+    "total_pnl": 7644,
+    "sharpe": null,
+    "brier": null
+  },
+  "improvement": {
+    "pnl_delta": 20827,
+    "win_rate_delta": 0.816,
+    "trades_filtered_out": 35
+  },
+  "v2_changes": [
+    "Added whale intelligence module (35% ensemble weight)",
+    "Removed Monte Carlo and Variance Reduction from probability estimation",
+    "New ensemble: Whale 35%, Particle Filter 25%, ABM 20%, Copula 15%, Microstructure 5%",
+    "Strict multi-gate filter: min 5% edge, $1M volume, whale confirmation, 3/5 layer agreement",
+    "High confidence requires: whale alignment + edge > 15% + z > 4.0",
+    "Medium confidence requires: edge > 8% + z > 3.0",
+    "Low confidence trades rejected entirely",
+    "Price range filter: reject markets < 0.08 or > 0.92",
+    "Fractional Kelly sizing with whale confidence multiplier"
+  ]
+}
