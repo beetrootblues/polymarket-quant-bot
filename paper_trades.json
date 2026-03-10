@@ -1,8 +1,8 @@
 {
   "created_at": "2026-03-10T04:12:51.502234+00:00",
-  "updated_at": "2026-03-10T17:07:48.242210+00:00",
+  "updated_at": "2026-03-10T18:00:36+00:00",
   "strategy_version": "v3",
-  "total_cycles": 16,
+  "total_cycles": 17,
   "paper_capital": 10000,
   "paper_deployed": 5412.37,
   "cumulative_pnl": 3534.19,
@@ -723,6 +723,34 @@
         "obi"
       ],
       "current_price": 0.635
+    }
+  ],
+  "cycle_history": [
+    {
+      "cycle": 17,
+      "execution": 15,
+      "timestamp": "2026-03-10T18:00:36+00:00",
+      "strategy_version": "v3",
+      "markets_scanned": 11,
+      "signals_generated": 0,
+      "signals_actionable": 0,
+      "signals_rejected": 0,
+      "new_trades": 0,
+      "trades_closed": 0,
+      "open_positions": 14,
+      "paper_equity": 13534.19,
+      "cumulative_pnl": 3534.19,
+      "realised_pnl": 3526.02,
+      "unrealised_pnl": 8.17,
+      "win_rate": 1.0,
+      "max_drawdown": 0.03,
+      "whale_signals": 2,
+      "obi_signals": 0,
+      "regimes": {
+        "normal": 11
+      },
+      "whale_obi_aligned": 0,
+      "whale_obi_total": 0
     }
   ]
 }
