@@ -1,0 +1,149 @@
+{
+  "run_date": "2026-03-10 05:16:48",
+  "run_timestamp": "2026-03-10T05:16:48.961012+00:00",
+  "markets_fetched": 123,
+  "markets_qualifying": 123,
+  "resolution_split": {
+    "yes": 46,
+    "no": 77
+  },
+  "category_distribution": {
+    "sports": 16,
+    "politics": 50,
+    "crypto": 31,
+    "other": 26
+  },
+  "simulation_params": {
+    "initial_capital": 10000.0,
+    "slippage_pct": 0.015,
+    "fee_pct": 0.02,
+    "seed": 42,
+    "v2_max_position": 500.0,
+    "v2_max_exposure": 0.6,
+    "v2_min_edge": 0.03,
+    "v3_max_position": 400.0,
+    "v3_max_exposure": 0.4
+  },
+  "test_a_v2_honest": {
+    "trades": 88,
+    "wins": 34,
+    "losses": 54,
+    "win_rate": 0.3864,
+    "total_pnl": -3245.75,
+    "final_capital": 6754.25,
+    "avg_pnl_per_trade": -36.88,
+    "max_drawdown": 3469.17,
+    "max_drawdown_pct": 34.69,
+    "profit_factor": 0.5781,
+    "sharpe": -3.84,
+    "best_trade": 254.3,
+    "worst_trade": -312.65,
+    "max_consecutive_losses": 7,
+    "category_pnl": {
+      "politics": -3346.55,
+      "sports": -151.94,
+      "crypto": 66.67,
+      "other": 186.07
+    },
+    "category_detail": {
+      "politics": {
+        "wins": 10,
+        "losses": 30,
+        "pnl": -3346.5513257411194
+      },
+      "sports": {
+        "wins": 4,
+        "losses": 6,
+        "pnl": -151.94292015336944
+      },
+      "crypto": {
+        "wins": 11,
+        "losses": 9,
+        "pnl": 66.67370276901556
+      },
+      "other": {
+        "wins": 9,
+        "losses": 9,
+        "pnl": 186.0748622601429
+      }
+    },
+    "confidence_breakdown": {
+      "medium": {
+        "count": 56,
+        "wins": 21,
+        "pnl": -2856.650917316534
+      },
+      "low": {
+        "count": 32,
+        "wins": 13,
+        "pnl": -389.09476354879706
+      }
+    },
+    "rejected_count": 35
+  },
+  "test_b_v3": {
+    "trades": 7,
+    "wins": 2,
+    "losses": 5,
+    "win_rate": 0.2857,
+    "total_pnl": -247.98,
+    "final_capital": 9752.02,
+    "avg_pnl_per_trade": -35.43,
+    "max_drawdown": 255.65,
+    "max_drawdown_pct": 2.56,
+    "profit_factor": 0.5572,
+    "sharpe": -4.44,
+    "best_trade": 219.48,
+    "worst_trade": -132.74,
+    "max_consecutive_losses": 2,
+    "category_pnl": {
+      "crypto": -467.46,
+      "other": 219.48
+    },
+    "category_detail": {
+      "crypto": {
+        "wins": 1,
+        "losses": 5,
+        "pnl": -467.4550582287733
+      },
+      "other": {
+        "wins": 1,
+        "losses": 0,
+        "pnl": 219.48
+      }
+    },
+    "confidence_breakdown": {
+      "low": {
+        "count": 5,
+        "wins": 2,
+        "pnl": -19.096131819052772
+      },
+      "medium": {
+        "count": 2,
+        "wins": 0,
+        "pnl": -228.87892640972052
+      }
+    },
+    "regime_distribution": {
+      "sweet_spot": 72,
+      "normal": 51
+    },
+    "rejection_reasons": {
+      "volume_too_low": 88,
+      "edge_too_small": 22,
+      "whale_obi_misaligned": 5,
+      "insufficient_layer_agreement": 1
+    },
+    "total_signals_generated": 123,
+    "total_signals_passed": 7,
+    "total_signals_rejected": 116
+  },
+  "improvement": {
+    "pnl_delta": 2997.77,
+    "win_rate_delta": -0.1007,
+    "drawdown_improvement": 32.13,
+    "v3_better_pnl": "True",
+    "v3_better_wr": false,
+    "v3_less_drawdown": "True"
+  }
+}
