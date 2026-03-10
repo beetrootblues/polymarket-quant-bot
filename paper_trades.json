@@ -1,8 +1,8 @@
 {
   "created_at": "2026-03-10T04:12:51.502234+00:00",
-  "updated_at": "2026-03-10T20:06:23.703883+00:00",
+  "updated_at": "2026-03-10T21:22:26.918288+00:00",
   "strategy_version": "v3",
-  "total_cycles": 19,
+  "total_cycles": 20,
   "paper_capital": 10000,
   "paper_deployed": 5412.37,
   "cumulative_pnl": 3534.19,
@@ -21,11 +21,11 @@
   "max_drawdown_pct": 0.03,
   "peak_capital": 13535.41,
   "sharpe_estimate": 5.23,
-  "whale_signals_received": 101,
-  "obi_signals_received": 328,
+  "whale_signals_received": 143,
+  "obi_signals_received": 370,
   "regime_types_seen": {
-    "normal": 117,
-    "trending": 101,
+    "normal": 147,
+    "trending": 121,
     "mean_reverting": 37
   },
   "whale_obi_aligned_count": 33,
@@ -788,6 +788,43 @@
         "whale_obi": 0
       },
       "whale_obi_aligned": 33
+    },
+    {
+      "cycle": 19,
+      "execution": 18,
+      "timestamp": "2026-03-10T21:22:26.918288+00:00",
+      "strategy_version": "v3",
+      "markets_scanned": 1000,
+      "signals_generated": 50,
+      "signals_actionable": 0,
+      "signals_rejected": 50,
+      "new_trades": 0,
+      "trades_closed": 0,
+      "open_positions": 14,
+      "paper_equity": 13534.19,
+      "cumulative_pnl": 3534.19,
+      "realised_pnl": 3526.02,
+      "unrealised_pnl": 8.17,
+      "win_rate": 1.0,
+      "max_drawdown": 0.03,
+      "whale_signals": 42,
+      "obi_signals": 42,
+      "regimes": {
+        "normal": 30,
+        "trending": 20,
+        "mean_reverting": 0
+      },
+      "whale_obi_aligned": 0,
+      "rejection_breakdown": {
+        "volume": 0,
+        "spread": 50,
+        "edge": 0,
+        "layers": 0,
+        "price_range": 0,
+        "drawdown": 0,
+        "exposure": 0,
+        "whale_obi": 0
+      }
     }
   ]
 }
