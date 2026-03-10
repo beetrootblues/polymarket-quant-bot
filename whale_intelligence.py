@@ -606,27 +606,36 @@ class WhaleTracker:
 
 # ─── Backtesting Support ──────────────────────────────────────────────────────
 
-class MockWhaleTracker(WhaleTracker):
+class HonestMockWhaleTracker(WhaleTracker):
     """
-    Mock whale tracker for backtesting against resolved markets.
-    Simulates whale signals based on market characteristics that
-    correlate with whale activity. Calibrated against real-world
-    data: top 1% of Polymarket traders achieve 65-75% win rates.
+    Honest mock whale tracker for backtesting — NO data leakage.
+    Does NOT accept resolved_outcome. Generates whale signals using
+    only observable market data (price, volume, spread, question text).
+
+    Expected accuracy: ~52-58% directional (slightly better than coin flip
+    due to market-price anchoring, but nowhere near the 60-75% the leaked
+    MockWhaleTracker produced).
     """
 
     def __init__(self, config: Optional[WhaleConfig] = None, seed: int = 42):
         self.config = config or WhaleConfig()
         self.rng = np.random.RandomState(seed)
-        self.client = None
-        self._cache = {}
+        self.client = None  # No API calls in mock
+        self._cache: Dict[str, Tuple[float, any]] = {}
         self._cache_ttl = 300
         self._last_request_time = 0.0
 
-    def analyze_market(self, market, resolved_outcome: Optional[bool] = None) -> WhaleIntelligence:
+    def analyze_market(self, market) -> WhaleIntelligence:
+        """
+        Generate whale intelligence from observable market data only.
+        No resolved_outcome parameter — this is the honest version.
+        """
         market_id = getattr(market, "market_id", str(market))
         condition_id = getattr(market, "condition_id", "") or market_id
         yes_price = getattr(market, "yes_price", 0.5)
         volume = getattr(market, "volume", 0)
+        spread = getattr(market, "spread", 0.04)
+        question = getattr(market, "question", "")
 
         intel = WhaleIntelligence(
             market_id=market_id,
@@ -634,73 +643,94 @@ class MockWhaleTracker(WhaleTracker):
             timestamp=datetime.utcnow().isoformat(),
         )
 
-        # Scale whale presence by volume
-        volume_m = volume / 1e6
-        n_whales = min(int(volume_m * 2) + self.rng.poisson(1), 20)
+        # ── Whale count: based on log(volume / $100K), range 0-8, with Poisson noise
+        volume_100k = max(volume / 100_000, 0.01)
+        base_whale_count = min(int(np.log(volume_100k + 1) * 2), 8)
+        n_whales = max(0, base_whale_count + self.rng.poisson(1) - 1)
+        n_whales = min(n_whales, 8)
         intel.n_whale_holders = n_whales
 
-        if resolved_outcome is not None and n_whales > 0:
-            # Simulate whale accuracy: ~60-75% of whale capital on correct side
-            whale_accuracy = 0.60 + self.rng.uniform(0, 0.15)
-
-            if resolved_outcome:
-                intel.whale_yes_pct = whale_accuracy
-                intel.whale_no_pct = 1.0 - whale_accuracy
-                intel.smart_money_pnl_bias = whale_accuracy - 0.5
-            else:
-                intel.whale_no_pct = whale_accuracy
-                intel.whale_yes_pct = 1.0 - whale_accuracy
-                intel.smart_money_pnl_bias = -(whale_accuracy - 0.5)
-
-            noise_scale = max(0.05, 0.3 - volume_m * 0.02)
-            intel.smart_money_pnl_bias += self.rng.normal(0, noise_scale)
-            intel.smart_money_pnl_bias = np.clip(intel.smart_money_pnl_bias, -1.0, 1.0)
+        # ── Whale direction: slight bias toward market price direction
+        #    If yes_price > 0.6 -> slight YES bias
+        #    If yes_price < 0.4 -> slight NO bias
+        #    Mid-range (0.4-0.6) -> random
+        #    Add significant noise (std=0.20) so accuracy is only ~52-58%
+        if yes_price > 0.6:
+            direction_bias = (yes_price - 0.5) * 0.3  # Small positive bias
+        elif yes_price < 0.4:
+            direction_bias = (yes_price - 0.5) * 0.3  # Small negative bias
         else:
-            intel.whale_yes_pct = yes_price
-            intel.whale_no_pct = 1.0 - yes_price
-            intel.smart_money_pnl_bias = (yes_price - 0.5) * 0.5 + self.rng.normal(0, 0.15)
-            intel.smart_money_pnl_bias = np.clip(intel.smart_money_pnl_bias, -1.0, 1.0)
+            direction_bias = 0.0  # No bias in mid-range
 
-        # Simulate orderbook imbalance
-        intel.orderbook.imbalance_ratio = intel.smart_money_pnl_bias * 0.6 + self.rng.normal(0, 0.2)
-        intel.orderbook.imbalance_ratio = np.clip(intel.orderbook.imbalance_ratio, -1.0, 1.0)
+        # Add heavy noise — this is the key to honesty
+        direction_signal = direction_bias + self.rng.normal(0, 0.20)
 
-        # Simulate trade flow
-        base_flow = max(volume_m * 5000, 1000)
-        if intel.smart_money_pnl_bias > 0:
-            intel.trade_flow.large_buy_yes_usd = base_flow * (0.5 + intel.smart_money_pnl_bias * 0.4)
-            intel.trade_flow.large_buy_no_usd = base_flow * (0.5 - intel.smart_money_pnl_bias * 0.4)
-        else:
-            intel.trade_flow.large_buy_no_usd = base_flow * (0.5 + abs(intel.smart_money_pnl_bias) * 0.4)
-            intel.trade_flow.large_buy_yes_usd = base_flow * (0.5 - abs(intel.smart_money_pnl_bias) * 0.4)
+        # Convert to whale_yes_pct / whale_no_pct
+        whale_yes_pct = np.clip(0.5 + direction_signal, 0.15, 0.85)
+        whale_no_pct = 1.0 - whale_yes_pct
+        intel.whale_yes_pct = whale_yes_pct
+        intel.whale_no_pct = whale_no_pct
 
-        intel.trade_flow.n_unique_large_wallets_yes = max(1, int(n_whales * intel.whale_yes_pct))
-        intel.trade_flow.n_unique_large_wallets_no = max(1, int(n_whales * intel.whale_no_pct))
-
-        # Cluster detection
-        dominant = max(intel.trade_flow.n_unique_large_wallets_yes, intel.trade_flow.n_unique_large_wallets_no)
-        minor = min(intel.trade_flow.n_unique_large_wallets_yes, intel.trade_flow.n_unique_large_wallets_no)
-        if dominant >= self.config.min_cluster_wallets and dominant > minor * 1.5:
-            intel.cluster_detected = True
-            intel.cluster_direction = "YES" if intel.trade_flow.n_unique_large_wallets_yes > intel.trade_flow.n_unique_large_wallets_no else "NO"
-            intel.cluster_wallets = dominant
-            intel.cluster_volume_usd = max(intel.trade_flow.large_buy_yes_usd, intel.trade_flow.large_buy_no_usd)
-
-        intel.holder_concentration = min(0.8, max(0.1, 0.5 - volume_m * 0.01 + self.rng.normal(0, 0.1)))
-
-        holder_metrics = {
-            "whale_yes_pct": intel.whale_yes_pct,
-            "whale_no_pct": intel.whale_no_pct,
-            "concentration": intel.holder_concentration,
-            "n_whales": intel.n_whale_holders,
-        }
-
-        score, direction, strength = self._compute_composite_score(
-            holder_metrics, intel.smart_money_pnl_bias,
-            intel.trade_flow, intel.orderbook, intel.cluster_detected
+        # ── Smart money PnL bias: derived from direction + noise, NOT outcomes
+        intel.smart_money_pnl_bias = np.clip(
+            direction_signal * 0.8 + self.rng.normal(0, 0.12),
+            -1.0, 1.0
         )
-        intel.whale_confidence_score = score
-        intel.whale_direction = direction
-        intel.signal_strength = strength
+
+        # ── Whale confidence score: mostly 0.1-0.4, rarely above 0.5
+        raw_conf = abs(direction_signal) * 0.5 + self.rng.uniform(0.05, 0.25)
+        intel.whale_confidence_score = np.clip(raw_conf, 0.0, 0.7)
+        # Compress: make scores above 0.5 rare
+        if intel.whale_confidence_score > 0.5:
+            intel.whale_confidence_score = 0.5 + (intel.whale_confidence_score - 0.5) * 0.3
+
+        # ── Signal strength: mostly "weak" or "moderate"
+        price_extremity = abs(yes_price - 0.5)
+        if price_extremity > 0.35 and intel.whale_confidence_score > 0.35:
+            intel.signal_strength = "strong"
+        elif intel.whale_confidence_score > 0.25:
+            intel.signal_strength = "moderate"
+        else:
+            intel.signal_strength = "weak"
+
+        # ── Whale direction label
+        if whale_yes_pct > 0.55:
+            intel.whale_direction = "YES"
+        elif whale_no_pct > 0.55:
+            intel.whale_direction = "NO"
+        else:
+            intel.whale_direction = "NEUTRAL"
+
+        # ── Insider aligned: random with P=0.3 (close to base rate)
+        insider_aligned = self.rng.random() < 0.30
+
+        # ── Cluster detected: random with P=0.2
+        intel.cluster_detected = self.rng.random() < 0.20
+        if intel.cluster_detected:
+            intel.cluster_direction = intel.whale_direction if intel.whale_direction != "NEUTRAL" else "YES"
+            intel.cluster_wallets = max(3, self.rng.poisson(3) + 2)
+            intel.cluster_volume_usd = volume * self.rng.uniform(0.01, 0.05)
+
+        # ── Orderbook imbalance: noisy signal from price
+        intel.orderbook.imbalance_ratio = np.clip(
+            direction_signal * 0.4 + self.rng.normal(0, 0.25),
+            -1.0, 1.0
+        )
+        intel.orderbook.spread = spread
+
+        # ── Trade flow: noisy simulation
+        volume_m = volume / 1e6
+        base_flow = max(volume_m * 3000, 500)
+        flow_bias = intel.smart_money_pnl_bias
+        intel.trade_flow.large_buy_yes_usd = base_flow * (0.5 + flow_bias * 0.2)
+        intel.trade_flow.large_buy_no_usd = base_flow * (0.5 - flow_bias * 0.2)
+        intel.trade_flow.n_unique_large_wallets_yes = max(1, int(n_whales * whale_yes_pct))
+        intel.trade_flow.n_unique_large_wallets_no = max(1, int(n_whales * whale_no_pct))
+
+        # ── Holder concentration
+        intel.holder_concentration = np.clip(
+            0.4 + self.rng.normal(0, 0.12),
+            0.1, 0.8
+        )
 
         return intel
