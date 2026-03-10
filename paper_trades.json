@@ -1,13 +1,13 @@
 {
   "created_at": "2026-03-10T04:12:51.502234+00:00",
-  "updated_at": "2026-03-10T18:00:36+00:00",
+  "updated_at": "2026-03-10T19:08:17.112769+00:00",
   "strategy_version": "v3",
-  "total_cycles": 17,
+  "total_cycles": 18,
   "paper_capital": 10000,
   "paper_deployed": 5412.37,
-  "cumulative_pnl": 3534.19,
+  "cumulative_pnl": 3526.94,
   "realised_pnl": 3526.02,
-  "unrealised_pnl": 8.17,
+  "unrealised_pnl": 0.92,
   "total_trades": 24,
   "open_trades": 14,
   "closed_trades": 10,
@@ -20,15 +20,15 @@
   "worst_trade_pnl": 174.93,
   "max_drawdown_pct": 0.03,
   "peak_capital": 13535.41,
-  "sharpe_estimate": 5.227,
-  "whale_signals_received": 26,
-  "obi_signals_received": 244,
+  "sharpe_estimate": 0.83,
+  "whale_signals_received": 59,
+  "obi_signals_received": 286,
   "regime_types_seen": {
-    "normal": 50,
-    "trending": 68,
+    "normal": 87,
+    "trending": 81,
     "mean_reverting": 37
   },
-  "whale_obi_aligned_count": 0,
+  "whale_obi_aligned_count": 33,
   "trades": [
     {
       "trade_id": "023502b9d0c0",
@@ -751,6 +751,43 @@
       },
       "whale_obi_aligned": 0,
       "whale_obi_total": 0
+    },
+    {
+      "cycle": 18,
+      "execution": 16,
+      "timestamp": "2026-03-10T19:08:17.112769+00:00",
+      "strategy_version": "v3",
+      "markets_scanned": 50,
+      "signals_generated": 50,
+      "signals_actionable": 0,
+      "signals_rejected": 50,
+      "new_trades": 0,
+      "trades_closed": 0,
+      "open_positions": 14,
+      "paper_equity": 13526.94,
+      "cumulative_pnl": 3526.94,
+      "realised_pnl": 3526.02,
+      "unrealised_pnl": 0.92,
+      "win_rate": 1.0,
+      "max_drawdown": 0.03,
+      "whale_signals": 33,
+      "obi_signals": 42,
+      "regimes": {
+        "trending": 13,
+        "normal": 37,
+        "mean_reverting": 0
+      },
+      "rejection_breakdown": {
+        "volume": 0,
+        "spread": 0,
+        "edge": 50,
+        "layers": 0,
+        "price_range": 0,
+        "drawdown": 0,
+        "exposure": 0,
+        "whale_obi": 0
+      },
+      "whale_obi_aligned": 33
     }
   ]
 }
